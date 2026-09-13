@@ -1,0 +1,12 @@
+[project]
+name = "svincolati"
+version = "0.1.0"
+description = "Predicts when Serie C free agents sign. Public, immutable, measured."
+requires-python = ">=3.12"
+dependencies = ["playwright>=1.45", "pandas>=2.2", "scikit-learn>=1.5"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
