@@ -6,7 +6,7 @@ import time
 
 from playwright.sync_api import sync_playwright
 
-from .tm import BASE
+from .tm import LISTS
 
 UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -28,7 +28,10 @@ class TM:
 
     def _warm_up(self) -> None:
         # Anti-bot challenge is solved by JS on an HTML page; JSON endpoints need the resulting cookies.
-        self._goto(BASE, "footer")
+        try:
+            self._goto(LISTS["A"], "table.items")
+        except Exception as e:  # best effort: json() retries and raises on its own
+            print(f"[fetch] warm-up failed {type(e).__name__}", flush=True)
         time.sleep(2)
 
     def __exit__(self, *exc):
@@ -40,7 +43,7 @@ class TM:
             try:
                 self._page.goto(url, wait_until="domcontentloaded", timeout=60_000)
                 if wait_selector:
-                    self._page.wait_for_selector(wait_selector, timeout=30_000)
+                    self._page.wait_for_selector(wait_selector, state="attached", timeout=30_000)
                 return
             except Exception:
                 if attempt == 1:
