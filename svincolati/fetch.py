@@ -6,6 +6,8 @@ import time
 
 from playwright.sync_api import sync_playwright
 
+from .tm import BASE
+
 UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
@@ -21,7 +23,13 @@ class TM:
         self._pw = sync_playwright().start()
         self._browser = self._pw.chromium.launch(headless=self.headless)
         self._page = self._browser.new_context(locale="it-IT", user_agent=UA).new_page()
+        self._warm_up()
         return self
+
+    def _warm_up(self) -> None:
+        # Anti-bot challenge is solved by JS on an HTML page; JSON endpoints need the resulting cookies.
+        self._goto(BASE, "footer")
+        time.sleep(2)
 
     def __exit__(self, *exc):
         self._browser.close()
@@ -45,7 +53,14 @@ class TM:
         return self._page.content()
 
     def json(self, url: str) -> dict:
-        self._goto(url, None)
-        txt = self._page.inner_text("body")
-        time.sleep(self.sleep_s)
-        return json.loads(txt)
+        for attempt in range(2):
+            self._goto(url, None)
+            txt = self._page.inner_text("body")
+            time.sleep(self.sleep_s)
+            try:
+                return json.loads(txt)
+            except json.JSONDecodeError:
+                if attempt == 1:
+                    raise
+                self._warm_up()
+        raise RuntimeError("unreachable")
