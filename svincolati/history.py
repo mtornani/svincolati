@@ -30,17 +30,22 @@ def update(fetcher, tm_ids: list[str], today: str, players_csv: Path = PLAYERS_C
         fetched = known.get(tm_id)
         if fetched and (t0 - date.fromisoformat(fetched)).days < STALE_DAYS:
             continue
-        data = fetcher.json(tm.history_url(tm_id))
-        (Path(hist_dir) / f"{tm_id}.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
-        if not fetched:
-            prof = tm.parse_profile(fetcher.html(tm.profile_url(tm_id), ".data-header"))
-            players = pd.concat(
-                [players, pd.DataFrame([{"tm_id": tm_id, **prof, "fetched_at": today}])], ignore_index=True
-            )
-        else:
-            players.loc[players["tm_id"] == tm_id, "fetched_at"] = today
+        try:
+            data = fetcher.json(tm.history_url(tm_id))
+            (Path(hist_dir) / f"{tm_id}.json").write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+            if not fetched:
+                prof = tm.parse_profile(fetcher.html(tm.profile_url(tm_id), ".data-header"))
+                players = pd.concat(
+                    [players, pd.DataFrame([{"tm_id": tm_id, **prof, "fetched_at": today}])], ignore_index=True
+                )
+            else:
+                players.loc[players["tm_id"] == tm_id, "fetched_at"] = today
+        except Exception as e:  # network/anti-bot: skip this player, keep the run alive
+            print(f"[history] {tm_id} FAILED {type(e).__name__}", flush=True)
+            continue
         n += 1
-        print(f"[history] {tm_id} updated")
+        players[PLAYER_COLS].to_csv(players_csv, index=False)  # incremental: a crash keeps progress
+        print(f"[history] {tm_id} updated", flush=True)
     players[PLAYER_COLS].to_csv(players_csv, index=False)
     return n
 
