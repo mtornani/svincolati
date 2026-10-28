@@ -67,3 +67,5 @@ Cache locale, refetch minimo. Dataset raw non ridistribuito. Uso non commerciale
 ## Licenza
 
 MIT. Autore: Mirko Tornani, UEFA B, staff FSGC.
+
+<!-- build: a8c5e037 -->
